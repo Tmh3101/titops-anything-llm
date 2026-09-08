@@ -30,7 +30,7 @@ services:
       - OLLAMA_HOST=0.0.0.0
       - OLLAMA_KEEP_ALIVE=5m
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      test: ["CMD", "ollama", "list"]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -48,14 +48,13 @@ services:
       - anything-llm
     entrypoint: ["/bin/sh", "-c"]
     command: |
-      sh -c '
-        set -e
-        MODEL="$${OLLAMA_MODEL_PREF:-qwen2.5:3b-instruct-q4_K_M}"
-        echo "[ollama-init] Ensuring model $$MODEL is available..."
-        OLLAMA_HOST=http://ollama:11434 ollama pull "$$MODEL" || (echo "[ollama-init] pull alias failed, trying qwen2.5:3b" && OLLAMA_HOST=http://ollama:11434 ollama pull "qwen2.5:3b")
-        echo "[ollama-init] Model ready: $$MODEL"
-        OLLAMA_HOST=http://ollama:11434 ollama list
-      '
+      set -e
+      MODEL="$${OLLAMA_MODEL_PREF:-qwen2.5:3b-instruct-q4_K_M}"
+      echo "[ollama-init] Ensuring model $$MODEL is available..."
+      OLLAMA_HOST=http://ollama:11434 ollama pull "$$MODEL" || (echo "[ollama-init] pull alias failed, trying qwen2.5:3b" && OLLAMA_HOST=http://ollama:11434 ollama pull "qwen2.5:3b")
+      echo "[ollama-init] Model ready: $$MODEL"
+      OLLAMA_HOST=http://ollama:11434 ollama list
+      
     env_file:
       - .env
     restart: "no"
