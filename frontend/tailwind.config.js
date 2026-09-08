@@ -178,6 +178,7 @@ export default {
       },
       fontFamily: {
         sans: [
+          "K2D",
           "plus-jakarta-sans",
           "ui-sans-serif",
           "system-ui",
