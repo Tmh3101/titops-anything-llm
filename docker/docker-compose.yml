@@ -47,14 +47,14 @@ services:
     networks:
       - anything-llm
     entrypoint: ["/bin/sh", "-c"]
-    command: |
-      set -e
-      MODEL="$${OLLAMA_MODEL_PREF:-qwen2.5:3b-instruct-q4_K_M}"
-      echo "[ollama-init] Ensuring model $$MODEL is available..."
-      OLLAMA_HOST=http://ollama:11434 ollama pull "$$MODEL" || (echo "[ollama-init] pull alias failed, trying qwen2.5:3b" && OLLAMA_HOST=http://ollama:11434 ollama pull "qwen2.5:3b")
-      echo "[ollama-init] Model ready: $$MODEL"
-      OLLAMA_HOST=http://ollama:11434 ollama list
-      
+    command:
+      - |
+        set -e
+        MODEL="$${OLLAMA_MODEL_PREF:-qwen2.5:3b-instruct-q4_K_M}"
+        echo "[ollama-init] Ensuring model $$MODEL is available..."
+        OLLAMA_HOST=http://ollama:11434 ollama pull "$$MODEL" || (echo "[ollama-init] pull alias failed, trying qwen2.5:3b" && OLLAMA_HOST=http://ollama:11434 ollama pull "qwen2.5:3b")
+        echo "[ollama-init] Model ready: $$MODEL"
+        OLLAMA_HOST=http://ollama:11434 ollama list
     env_file:
       - .env
     restart: "no"
