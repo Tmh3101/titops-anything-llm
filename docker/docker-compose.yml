@@ -80,7 +80,7 @@ services:
       - "../collector/outputs/:/app/collector/outputs"
     user: "${UID:-1000}:${GID:-1000}"
     ports:
-      - "${SERVER_PORT:-3001}:3001"
+      - "${SERVER_PORT:-3001}:${SERVER_PORT:-3001}"
     env_file:
       - .env
     networks:
