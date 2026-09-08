@@ -98,7 +98,9 @@ if [[ "${LLM_PROVIDER}" == "ollama" ]]; then
   docker compose -f "$COMPOSE_FILE" up -d --build
 else
   echo "[info] LLM_PROVIDER=${LLM_PROVIDER:-<trống>} -> chỉ chạy anything-llm (không cần Ollama), cấu hình LLM trên UI sau"
-  docker compose -f "$COMPOSE_FILE" up -d --build anything-llm
+  docker compose -f "$COMPOSE_FILE" up -d --build --no-deps anything-llm
+  # Dừng ollama nếu trước đó đang chạy để tiết kiệm RAM
+  docker compose -f "$COMPOSE_FILE" stop ollama ollama-init 2>/dev/null || true
 fi
 
 echo ""
