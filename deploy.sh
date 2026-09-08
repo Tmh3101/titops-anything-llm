@@ -55,10 +55,13 @@ ENVEOF
 fi
 
 # 3. Load config từ .env (không hard-code trong sh)
+# Lọc UID/GID vì UID là biến readonly của bash (không thể export UID=1000)
 set -a
 # shellcheck disable=SC1090
-source <(grep -v '^#' "$ROOT_DIR/$ENV_FILE" | grep -v '^\s*$' | sed 's/\r$//')
+source <(grep -v '^\s*#' "$ROOT_DIR/$ENV_FILE" | grep -v '^\s*$' | grep -v '^\s*UID=' | grep -v '^\s*GID=' | sed 's/\r$//')
 set +a
+# UID/GID để docker compose build args dùng, nhưng không cần export trong bash (compose tự đọc .env)
+# Nếu cần, export qua biến khác để tránh readonly error
 
 OLLAMA_MODEL_PREF="${OLLAMA_MODEL_PREF:-qwen2.5:3b-instruct-q4_K_M}"
 SERVER_PORT="${SERVER_PORT:-3001}"
