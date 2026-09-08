@@ -1,10 +1,64 @@
 name: anythingllm
 
+# One-command local stack - CPU-only (6 vCPU / 9.7GB RAM / no GPU)
+# Cấu hình đọc từ docker/.env (không còn hard-code trong deploy.sh)
+# Usage: docker compose -f docker/docker-compose.yml up -d
+#        ./deploy.sh
+# Đổi model: sửa OLLAMA_MODEL_PREF trong docker/.env rồi restart
+
 networks:
   anything-llm:
     driver: bridge
 
 services:
+  ollama:
+    image: ollama/ollama:0.11.11
+    container_name: anythingllm-ollama
+    restart: unless-stopped
+    # Chỉ internal - AnythingLLM gọi qua http://ollama:11434 trong network
+    # KHÔNG expose ra host/internet mặc định (bảo mật, tiết kiệm port)
+    # Nếu cần debug Ollama từ host: bỏ comment dòng ports bên dưới
+    expose:
+      - "11434"
+    # ports:
+    #   - "${OLLAMA_PORT:-11434}:11434"  # hoặc "127.0.0.1:${OLLAMA_PORT:-11434}:11434" để chỉ localhost
+    volumes:
+      - ollama-storage:/root/.ollama
+    networks:
+      - anything-llm
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+      - OLLAMA_KEEP_ALIVE=5m
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  ollama-init:
+    image: ollama/ollama:0.11.11
+    container_name: anythingllm-ollama-init
+    depends_on:
+      ollama:
+        condition: service_healthy
+    volumes:
+      - ollama-storage:/root/.ollama
+    networks:
+      - anything-llm
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        MODEL="$${OLLAMA_MODEL_PREF:-qwen2.5:3b-instruct-q4_K_M}"
+        echo "[ollama-init] Ensuring model $$MODEL is available..."
+        OLLAMA_HOST=http://ollama:11434 ollama pull "$$MODEL" || (echo "[ollama-init] pull alias failed, trying qwen2.5:3b" && OLLAMA_HOST=http://ollama:11434 ollama pull "qwen2.5:3b")
+        echo "[ollama-init] Model ready: $$MODEL"
+        OLLAMA_HOST=http://ollama:11434 ollama list
+    env_file:
+      - .env
+    restart: "no"
+
   anything-llm:
     container_name: anythingllm
     build:
@@ -13,19 +67,33 @@ services:
       args:
         ARG_UID: ${UID:-1000}
         ARG_GID: ${GID:-1000}
+    depends_on:
+      ollama-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
     cap_add:
       - SYS_ADMIN
     volumes:
       - "./.env:/app/server/.env"
-      - "../server/storage:/app/server/storage"
+      - "anythingllm-storage:/app/server/storage"
       - "../collector/hotdir/:/app/collector/hotdir"
       - "../collector/outputs/:/app/collector/outputs"
     user: "${UID:-1000}:${GID:-1000}"
     ports:
-      - "3001:3001"
+      - "${SERVER_PORT:-3001}:${SERVER_PORT:-3001}"
     env_file:
       - .env
     networks:
       - anything-llm
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD-SHELL", "/bin/bash /usr/local/bin/docker-healthcheck.sh || exit 1"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+
+volumes:
+  ollama-storage:
+    driver: local
+  anythingllm-storage:
+    driver: local
