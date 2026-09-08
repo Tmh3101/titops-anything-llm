@@ -63,12 +63,15 @@ set +a
 # UID/GID để docker compose build args dùng, nhưng không cần export trong bash (compose tự đọc .env)
 # Nếu cần, export qua biến khác để tránh readonly error
 
-OLLAMA_MODEL_PREF="${OLLAMA_MODEL_PREF:-qwen2.5:3b-instruct-q4_K_M}"
+OLLAMA_MODEL_PREF="${OLLAMA_MODEL_PREF:-}"
 SERVER_PORT="${SERVER_PORT:-3001}"
+LLM_PROVIDER="${LLM_PROVIDER:-}"
+EMBEDDING_ENGINE="${EMBEDDING_ENGINE:-native}"
+VECTOR_DB="${VECTOR_DB:-lancedb}"
 
 echo "[info] Config từ $ENV_FILE:"
-echo "  LLM_PROVIDER=$LLM_PROVIDER"
-echo "  OLLAMA_MODEL_PREF=$OLLAMA_MODEL_PREF"
+echo "  LLM_PROVIDER=${LLM_PROVIDER:-<trống - cấu hình trên UI>}"
+echo "  OLLAMA_MODEL_PREF=${OLLAMA_MODEL_PREF:-<không dùng>}"
 echo "  EMBEDDING_ENGINE=$EMBEDDING_ENGINE"
 echo "  VECTOR_DB=$VECTOR_DB"
 echo "  SERVER_PORT=$SERVER_PORT"
@@ -89,23 +92,30 @@ if [[ "$OLLAMA_MODEL_PREF" == *"7b"* || "$OLLAMA_MODEL_PREF" == *"14b"* || "$OLL
   fi
 fi
 
-# 5. Up
-echo "[info] Building and starting stack (lần đầu pull model ~2GB, 5-10 phút trên CPU)..."
-docker compose -f "$COMPOSE_FILE" up -d --build
+# 5. Up - nếu LLM_PROVIDER không phải ollama thì chỉ chạy anything-llm (tiết kiệm RAM)
+if [[ "${LLM_PROVIDER}" == "ollama" ]]; then
+  echo "[info] Building and starting stack (lần đầu pull model ~2GB, 5-10 phút trên CPU)..."
+  docker compose -f "$COMPOSE_FILE" up -d --build
+else
+  echo "[info] LLM_PROVIDER=${LLM_PROVIDER:-<trống>} -> chỉ chạy anything-llm (không cần Ollama), cấu hình LLM trên UI sau"
+  docker compose -f "$COMPOSE_FILE" up -d --build anything-llm
+fi
 
 echo ""
-echo "[info] Waiting for Ollama healthy..."
-for i in {1..60}; do
-  if docker inspect --format='{{json .State.Health.Status}}' anythingllm-ollama 2>/dev/null | grep -q "healthy"; then
-    echo "[ok] Ollama healthy"
-    break
-  fi
-  echo "  ... $i/60"
-  sleep 5
-done
+if [[ "${LLM_PROVIDER}" == "ollama" ]]; then
+  echo "[info] Waiting for Ollama healthy..."
+  for i in {1..60}; do
+    if docker inspect --format='{{json .State.Health.Status}}' anythingllm-ollama 2>/dev/null | grep -q "healthy"; then
+      echo "[ok] Ollama healthy"
+      break
+    fi
+    echo "  ... $i/60"
+    sleep 5
+  done
 
-echo "[info] Waiting for model pull (ollama-init)..."
-docker logs -f anythingllm-ollama-init 2>&1 | head -n 100 || true
+  echo "[info] Waiting for model pull (ollama-init)..."
+  docker logs -f anythingllm-ollama-init 2>&1 | head -n 100 || true
+fi
 
 echo ""
 echo "[info] Stack status:"
