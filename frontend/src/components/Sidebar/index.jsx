@@ -45,12 +45,22 @@ export default function Sidebar() {
         <div className="overflow-hidden h-full">
           <div className="flex shrink-0 w-full justify-center my-[18px]">
             <div className="flex w-[250px] min-w-[250px]">
-              <Link to={paths.home()} aria-label="Home">
+              <Link
+                to={paths.home()}
+                aria-label="Home"
+                className="flex items-center gap-x-3"
+              >
                 <img
                   src={logo}
                   alt="Logo"
-                  className={`rounded max-h-[24px] object-contain transition-opacity duration-500 ${showSidebar ? "opacity-100" : "opacity-0"}`}
+                  className={`rounded-lg h-[32px] w-[32px] object-contain transition-opacity duration-500 ${showSidebar ? "opacity-100" : "opacity-0"}`}
                 />
+                <span
+                  className={`font-bold text-[18px] tracking-wide text-theme-text-primary whitespace-nowrap transition-opacity duration-500 ${showSidebar ? "opacity-100" : "opacity-0"}`}
+                  style={{ fontFamily: "K2D" }}
+                >
+                  TITOPS CHAT
+                </span>
               </Link>
             </div>
           </div>
@@ -119,13 +129,18 @@ export function SidebarMobileHeader() {
         >
           <List className="h-6 w-6" />
         </button>
-        <div className="flex items-center justify-center flex-grow">
+        <div className="flex items-center justify-center flex-grow gap-x-2">
           <img
             src={logo}
             alt="Logo"
-            className="block mx-auto h-6 w-auto"
-            style={{ maxHeight: "40px", objectFit: "contain" }}
+            className="block h-8 w-8 rounded-lg object-contain"
           />
+          <span
+            className="font-bold text-[16px] tracking-wide text-theme-text-primary"
+            style={{ fontFamily: "K2D" }}
+          >
+            TITOPS CHAT
+          </span>
         </div>
         <div className="w-12"></div>
       </div>
@@ -150,13 +165,18 @@ export function SidebarMobileHeader() {
           <div className="w-full h-full flex flex-col overflow-x-hidden items-between">
             {/* Header Information */}
             <div className="flex w-full items-center justify-between gap-x-4">
-              <div className="flex shrink-1 w-fit items-center justify-start">
+              <div className="flex shrink-1 w-fit items-center justify-start gap-x-2">
                 <img
                   src={logo}
                   alt="Logo"
-                  className="rounded w-full max-h-[40px]"
-                  style={{ objectFit: "contain" }}
+                  className="rounded-lg h-8 w-8 object-contain"
                 />
+                <span
+                  className="font-bold text-[16px] tracking-wide text-theme-text-primary"
+                  style={{ fontFamily: "K2D" }}
+                >
+                  TITOPS CHAT
+                </span>
               </div>
               {(!user || user?.role !== "default") && (
                 <div className="flex gap-x-2 items-center text-slate-500 shink-0">
